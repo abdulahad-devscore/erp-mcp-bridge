@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% block title %}Approvals{% endblock %}
+{% block body %}
+<h1>Waiting for approval <span class="muted">({{ pending|length }})</span></h1>
+{% if pending %}
+<div class="scroll"><table>
+  <tr><th>Requested</th><th>Type</th><th>What</th><th>Why</th><th>By</th><th></th></tr>
+  {% for a in pending %}
+  <tr>
+    <td class="muted">{{ a.created_at[:16].replace('T', ' ') }}</td>
+    <td>{{ a.action_type.replace('_', ' ') }}</td>
+    <td><a href="/approvals/{{ a.id }}">{{ a.summary }}</a></td>
+    <td>{{ a.reason }}</td>
+    <td class="muted">{{ a.requested_by }}</td>
+    <td style="white-space:nowrap">
+      <form method="post" action="/approvals/{{ a.id }}/approve" style="display:inline"><input type="hidden" name="token" value="{{ csrf }}"><button class="primary">Approve</button></form>
+      <form method="post" action="/approvals/{{ a.id }}/reject" style="display:inline"><input type="hidden" name="token" value="{{ csrf }}"><button class="danger">Reject</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% else %}<p class="muted">Nothing waiting. Agents' proposals appear here.</p>{% endif %}
+
+<h2>Recently decided</h2>
+<div class="scroll"><table>
+  <tr><th>Decided</th><th>Status</th><th>What</th><th>ERP ref</th><th>Decided by</th></tr>
+  {% for a in recent %}
+  <tr>
+    <td class="muted">{{ (a.decided_at or a.created_at)[:16].replace('T', ' ') }}</td>
+    <td><span class="pill {{ a.status }}">{{ a.status }}</span></td>
+    <td><a href="/approvals/{{ a.id }}">{{ a.summary }}</a></td>
+    <td>{{ a.odoo_ref or '' }}</td>
+    <td class="muted">{{ a.decided_by or '' }}</td>
+  </tr>
+  {% else %}<tr><td colspan="5" class="muted">None yet.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

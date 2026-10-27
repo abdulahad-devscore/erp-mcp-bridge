@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% block title %}{{ a.action_type }}{% endblock %}
+{% block body %}
+<p><a href="/approvals">&larr; All approvals</a></p>
+<h1>{{ a.summary }}</h1>
+<div class="card">
+  <dl>
+    <dt>Status</dt><dd><span class="pill {{ a.status }}">{{ a.status }}</span>{% if a.odoo_ref %} &rarr; <strong>{{ a.odoo_ref }}</strong> in Odoo{% endif %}</dd>
+    <dt>Reason given</dt><dd>{{ a.reason }}</dd>
+    <dt>Requested by</dt><dd>{{ a.requested_by }} <span class="muted">({{ a.requested_subject }}) at {{ a.created_at[:19].replace('T', ' ') }}</span></dd>
+    {% if a.decided_by %}<dt>Decided by</dt><dd>{{ a.decided_by }} <span class="muted">at {{ a.decided_at[:19].replace('T', ' ') }}</span>{% if a.decision_note %} — “{{ a.decision_note }}”{% endif %}</dd>{% endif %}
+    {% if a.error %}<dt>Error</dt><dd class="failed">{{ a.error }}</dd>{% endif %}
+  </dl>
+</div>
+
+{% if a.payload.lines %}
+<h2>Lines</h2>
+<div class="scroll"><table>
+  <tr><th>SKU</th><th>Product</th><th class="num">Quantity</th>{% if a.payload.lines[0].unit_price is defined %}<th class="num">Unit price</th><th class="num">Subtotal</th>{% endif %}</tr>
+  {% for l in a.payload.lines %}
+  <tr><td>{{ l.sku }}</td><td>{{ l.name or '' }}</td><td class="num">{{ '{:,.2f}'.format(l.quantity) }} {{ l.uom or '' }}</td>
+  {% if l.unit_price is defined %}<td class="num">{{ '{:,.2f}'.format(l.unit_price) }}</td><td class="num">{{ '{:,.2f}'.format(l.quantity * l.unit_price) }}</td>{% endif %}</tr>
+  {% endfor %}
+</table></div>
+{% endif %}
+{% if a.payload.match_evidence %}
+<h2>3-way match evidence</h2>
+<div class="card"><pre style="margin:0;white-space:pre-wrap">{{ a.payload.match_evidence | tojson(indent=2) }}</pre></div>
+{% endif %}
+
+{% if a.status == 'pending' %}
+<div class="card">
+  <form method="post"><input type="hidden" name="token" value="{{ csrf }}">
+    <div class="row">
+      <label>Note (optional)<br><input name="note" maxlength="500"></label>
+      <div><button class="primary" formaction="/approvals/{{ a.id }}/approve">Approve and write to ERP</button>
+      <button class="danger" formaction="/approvals/{{ a.id }}/reject">Reject</button></div>
+    </div>
+  </form>
+</div>
+{% elif a.status == 'failed' %}
+<form method="post" action="/approvals/{{ a.id }}/retry"><input type="hidden" name="token" value="{{ csrf }}"><button class="primary">Retry write</button> <span class="muted">Safe to retry: records already created are found, not duplicated.</span></form>
+{% endif %}
+
+<h2>Audit trail</h2>
+<div class="scroll"><table>
+  <tr><th>Time</th><th>Event</th><th>Outcome</th><th>Detail</th></tr>
+  {% for e in events %}<tr><td class="muted">{{ e.ts[:19].replace('T', ' ') }}</td><td>{{ e.kind }}</td><td>{{ e.outcome }}</td><td>{{ e.detail or '' }}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

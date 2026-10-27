@@ -1,0 +1,102 @@
+# docker compose up  ->  Odoo 17 with Tembusu seed data + the ERP MCP Bridge
+#   Odoo:            http://localhost:8069   (admin / admin)
+#   Approval page:   http://localhost:8000/approvals
+#   MCP endpoint:    http://localhost:8000/mcp
+#   API docs:        http://localhost:8000/docs
+#
+# Behind a Docker Hub rate limit? Set REGISTRY=mirror.gcr.io in .env.
+
+x-odoo-env: &odoo-env
+  HOST: odoo-db
+  USER: odoo
+  PASSWORD: ${ODOO_DB_PASSWORD:-odoo}
+  ODOO_DB: ${ODOO_DB:-tembusu}
+
+services:
+  odoo-db:
+    image: ${REGISTRY:-docker.io}/library/postgres:16
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: ${ODOO_DB_PASSWORD:-odoo}
+      POSTGRES_DB: postgres
+    volumes: [odoo-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo"]
+      interval: 5s
+      retries: 20
+
+  odoo-init:
+    image: ${REGISTRY:-docker.io}/library/odoo:17.0
+    environment: *odoo-env
+    entrypoint: ["/bin/sh", "/init/odoo-init.sh"]
+    volumes: ["./docker/odoo-init.sh:/init/odoo-init.sh:ro", "odoo-data:/var/lib/odoo"]
+    depends_on:
+      odoo-db: { condition: service_healthy }
+
+  odoo:
+    image: ${REGISTRY:-docker.io}/library/odoo:17.0
+    environment: *odoo-env
+    command: ["odoo", "-d", "${ODOO_DB:-tembusu}", "--db-filter=^${ODOO_DB:-tembusu}$$", "--no-database-list"]
+    ports: ["8069:8069"]
+    volumes: ["odoo-data:/var/lib/odoo"]
+    depends_on:
+      odoo-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8069/web/health')"]
+      interval: 10s
+      retries: 30
+
+  # One-shot: loads ~4 months of manufacturing, distribution and retail history.
+  # Skips itself if the data is already there. First run takes ~10-15 minutes.
+  seed:
+    build: { context: ., args: { REGISTRY: "${REGISTRY:-docker.io}" } }
+    command: ["python", "-m", "seed.seed_odoo"]
+    healthcheck: { disable: true }  # the image's healthcheck is for the bridge server
+    environment:
+      ODOO_URL: http://odoo:8069
+      ODOO_DB: ${ODOO_DB:-tembusu}
+      ODOO_USER: admin
+      ODOO_PASSWORD: ${ODOO_ADMIN_PASSWORD:-admin}
+    depends_on:
+      odoo: { condition: service_healthy }
+
+  bridge-db:
+    image: ${REGISTRY:-docker.io}/library/postgres:16
+    environment:
+      POSTGRES_USER: bridge
+      POSTGRES_PASSWORD: ${BRIDGE_DB_PASSWORD:-bridge}
+      POSTGRES_DB: bridge
+    ports: ["5433:5432"]
+    volumes: [bridge-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bridge"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: ${REGISTRY:-docker.io}/library/redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+
+  erp-bridge:
+    build: { context: ., args: { REGISTRY: "${REGISTRY:-docker.io}" } }
+    env_file: [{ path: .env, required: false }]
+    environment:
+      ODOO_URL: http://odoo:8069
+      ODOO_DB: ${ODOO_DB:-tembusu}
+      ODOO_USER: admin
+      ODOO_PASSWORD: ${ODOO_ADMIN_PASSWORD:-admin}
+      DATABASE_URL: postgresql+psycopg://bridge:${BRIDGE_DB_PASSWORD:-bridge}@bridge-db:5432/bridge
+      REDIS_URL: redis://redis:6379/0
+      PUBLIC_URL: ${BRIDGE_PUBLIC_URL:-http://localhost:8000}
+    ports: ["8000:8000"]
+    depends_on:
+      odoo: { condition: service_healthy }
+      bridge-db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+volumes:
+  odoo-db:
+  odoo-data:
+  bridge-db:

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Approvals{% endblock %} · ERP Bridge</title>
+<style>
+  :root { --bg:#f7f7f5; --card:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e3e2dc; --accent:#1f5f4a;
+          --warn:#a3561b; --bad:#9b2c2c; --good:#1f6b3a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#151614; --card:#1e1f1c; --ink:#ecebe6; --muted:#a3a29b;
+          --line:#33342f; --accent:#6fc4a3; --warn:#e0a46a; --bad:#ef8a8a; --good:#7fd19b; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--ink); }
+  header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--card); }
+  header nav a { margin-right:16px; color:var(--ink); text-decoration:none; font-weight:500; }
+  main { max-width:1080px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:20px; margin:8px 0 16px; } h2 { font-size:16px; margin:28px 0 10px; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; }
+  .pill { display:inline-block; padding:1px 8px; border-radius:99px; font-size:12px; font-weight:600; border:1px solid currentColor; }
+  .pending { color:var(--warn); } .executed, .approved { color:var(--good); } .rejected, .failed { color:var(--bad); } .executing { color:var(--accent); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
+  .muted { color:var(--muted); } a { color:var(--accent); }
+  button { font:inherit; padding:7px 14px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); } button.danger { color:var(--bad); }
+  input, textarea { font:inherit; padding:7px 10px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--ink); width:100%; }
+  .row { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; } .row > * { flex:1 1 220px; }
+  .scroll { overflow-x:auto; }
+  dl { display:grid; grid-template-columns:160px 1fr; gap:6px 12px; margin:0; } dt { color:var(--muted); }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
+</style>
+</head>
+<body>
+<header>
+  <nav><strong style="margin-right:20px">ERP Bridge</strong>{% if who %}<a href="/approvals">Approvals</a><a href="/audit">Audit log</a><a href="/docs">API</a>{% endif %}</nav>
+  {% if who %}<form method="post" action="/logout"><span class="muted" style="margin-right:10px">{{ who }}</span><button>Sign out</button></form>{% endif %}
+</header>
+<main>{% block body %}{% endblock %}</main>
+<footer>Agents propose. People approve. The bridge writes and logs everything.</footer>
+</body>
+</html>

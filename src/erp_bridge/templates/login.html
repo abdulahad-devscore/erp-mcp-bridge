@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}Sign in{% endblock %}
+{% block body %}
+<div class="card" style="max-width:380px;margin:60px auto">
+  <h1>Approver sign-in</h1>
+  {% if error %}<p class="failed">Wrong credentials, or this client cannot approve actions.</p>{% endif %}
+  <form method="post" action="/login">
+    <p><label>Client ID<br><input name="client_id" autocomplete="username" required></label></p>
+    <p><label>Secret<br><input name="secret" type="password" autocomplete="current-password" required></label></p>
+    <button class="primary">Sign in</button>
+  </form>
+  <p class="muted" style="font-size:13px">Demo: approver-ops / approver-ops-demo-secret</p>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+  schedule: [{ cron: "17 3 * * 1" }]  # weekly full-stack run
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests seed && ruff format --check src tests seed
+      - run: pytest -q
+
+  integration:
+    # Boots Odoo, seeds ~4 months of data (~12 min) and runs the integration tests against it.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e ".[dev]"
+      - run: docker compose up -d --build --wait odoo bridge-db redis erp-bridge
+      - run: docker compose run --rm seed
+      - run: ODOO_URL=http://localhost:8069 ODOO_DB=tembusu pytest -q -m integration
+      - if: failure()
+        run: docker compose logs --tail 200
