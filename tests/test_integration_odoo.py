@@ -39,7 +39,7 @@ async def test_seeded_reads(erp):
     codes = {w.code for w in await erp.warehouses()}
     assert codes == {"FAC", "DC", "KLCC", "PJ", "PNG"}
     fryers = await erp.stock_levels(["KLCC"], ["TH-SA-6104"], None)
-    assert fryers[0].below_min
+    assert fryers[0].on_hand == 2 and fryers[0].reorder_min == 10  # the seeded KLCC shortage
     suggestions = await erp.reorder_suggestions(["FAC"])
     assert "RM-AL-INGOT" in {s.sku for s in suggestions}
     report = await erp.sales_by_period(date(2026, 7, 1), date(2026, 9, 30), "channel", [])

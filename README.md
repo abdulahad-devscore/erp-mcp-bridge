@@ -1,13 +1,13 @@
 # ERP MCP Bridge
 
-[![ci](https://github.com/OWNER/erp-mcp-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/erp-mcp-bridge/actions/workflows/ci.yml)
+[![ci](https://github.com/abdulahad-devscore/erp-mcp-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/abdulahad-devscore/erp-mcp-bridge/actions/workflows/ci.yml)
 ![MCP](https://img.shields.io/badge/MCP-2.3-blue) ![Odoo](https://img.shields.io/badge/Odoo-17-714B67) ![license](https://img.shields.io/badge/license-MIT-green)
 
 **The problem.** Manufacturers, distributors and retailers want AI agents to answer "what's in stock at KLCC?" and to draft the purchase order when it isn't — but nobody wants an agent with write access to their ERP. This repo puts an MCP server in front of Odoo that lets any agent read live data and *propose* changes, while a person approves every write and the bridge logs every call.
 
 > Part of a three-repo showcase built around **Tembusu Housewares Sdn Bhd**, a fictional Malaysian company that manufactures cookware (factory in Shah Alam), distributes it (DC in Port Klang) and sells it (three stores, online, wholesale). See also [ops-copilot-agent](../ops-copilot-agent) and [invoice-flow](../invoice-flow).
 
-![Approval page](docs/approval-page.png)
+![Demo: an agent proposes, a person approves, the bridge writes to Odoo](docs/demo.gif)
 
 ## Architecture
 
@@ -41,6 +41,8 @@ flowchart LR
 ```
 
 Agents never hold ERP credentials and no tool writes to Odoo. A `propose_*` tool validates the request against live data (does the supplier exist, does the source warehouse have the stock, is the product actually manufactured) and stores a **pending action**. A person approves it on the approval page or through the JSON API; only then does the executor write to Odoo. Every tool call, decision and write lands in the audit log.
+
+![Approval page](docs/approval-page.png)
 
 ## What's inside
 
@@ -76,7 +78,7 @@ docker compose logs -f seed   # first run: creates the Odoo DB (~2 min) and load
 |---|---|
 | Approval page | http://localhost:8000/approvals (`approver-ops` / `approver-ops-demo-secret`) |
 | MCP endpoint | http://localhost:8000/mcp |
-| API docs (OpenAPI contract for the Approval Console) | http://localhost:8000/docs |
+| API docs (OpenAPI contract for the Approval Console, also in [docs/openapi.json](docs/openapi.json)) | http://localhost:8000/docs |
 | Odoo | http://localhost:8069 (`admin` / `admin`) |
 
 **Try it with MCP Inspector**
@@ -142,4 +144,4 @@ The HTTP tests start a real server and go through OAuth, MCP over Streamable HTT
 
 ---
 
-Built by [Your Name], Backend Engineer at Devs Core — [devs-core.com](https://devs-core.com). MIT licence. All company, supplier and customer names are fictional.
+Built by Abdul Ahad, Backend Engineer at Devs Core — [devs-core.com](https://devs-core.com). MIT licence. All company, supplier and customer names are fictional.
