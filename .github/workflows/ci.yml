@@ -14,7 +14,15 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install -e ".[dev]"
       - run: ruff check src tests seed && ruff format --check src tests seed
-      - run: pytest -q
+      - name: pytest
+        shell: bash
+        run: |
+          set -o pipefail
+          pytest -q -rfE 2>&1 | tee pytest.log
+      - name: Report test failures
+        if: failure()
+        shell: bash
+        run: grep -E "^(FAILED|ERROR)|^E  " pytest.log | head -20 | sed "s/^/::error::/" || true
 
   integration:
     # Boots Odoo, seeds ~4 months of data (~12 min) and runs the integration tests against it.

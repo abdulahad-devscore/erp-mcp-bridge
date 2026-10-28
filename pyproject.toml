@@ -36,6 +36,7 @@ packages = ["src/erp_bridge"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 markers = ["integration: needs the docker compose stack (Odoo) running"]
